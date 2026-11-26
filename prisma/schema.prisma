@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Rol {
+  ADMIN
+  VENDEDOR
+}
+
+model Tienda {
+  id        String     @id @default(cuid())
+  nombre    String
+  creadaEn  DateTime   @default(now())
+  usuarios  Usuario[]
+  productos Producto[]
+  clientes  Cliente[]
+  ventas    Venta[]
+}
+
+model Usuario {
+  id           String  @id @default(cuid())
+  tiendaId     String
+  tienda       Tienda  @relation(fields: [tiendaId], references: [id])
+  nombre       String
+  email        String  @unique
+  passwordHash String
+  rol          Rol     @default(VENDEDOR)
+  activo       Boolean @default(true)
+  ventas       Venta[]
+
+  @@index([tiendaId])
+}
+
+model Producto {
+  id           String         @id @default(cuid())
+  tiendaId     String
+  tienda       Tienda         @relation(fields: [tiendaId], references: [id])
+  nombre       String
+  codigo       String?
+  precioCompra Decimal        @db.Decimal(12, 2)
+  precioVenta  Decimal        @db.Decimal(12, 2)
+  stock        Int            @default(0)
+  stockMinimo  Int            @default(5)
+  detalles     DetalleVenta[]
+
+  @@unique([tiendaId, codigo])
+  @@index([tiendaId])
+}
+
+model Cliente {
+  id       String  @id @default(cuid())
+  tiendaId String
+  tienda   Tienda  @relation(fields: [tiendaId], references: [id])
+  nombre   String
+  telefono String?
+  ventas   Venta[]
+  abonos   Abono[]
+
+  @@index([tiendaId])
+}
+
+model Venta {
+  id             String         @id @default(cuid())
+  tiendaId       String
+  tienda         Tienda         @relation(fields: [tiendaId], references: [id])
+  usuarioId      String
+  usuario        Usuario        @relation(fields: [usuarioId], references: [id])
+  clienteId      String?
+  cliente        Cliente?       @relation(fields: [clienteId], references: [id])
+  total          Decimal        @db.Decimal(12, 2)
+  fiado          Boolean        @default(false)
+  saldoPendiente Decimal        @default(0) @db.Decimal(12, 2)
+  fecha          DateTime       @default(now())
+  detalles       DetalleVenta[]
+
+  @@index([tiendaId, fecha])
+}
+
+model DetalleVenta {
+  id             String   @id @default(cuid())
+  ventaId        String
+  venta          Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  productoId     String
+  producto       Producto @relation(fields: [productoId], references: [id])
+  cantidad       Int
+  precioUnitario Decimal  @db.Decimal(12, 2)
+}
+
+model Abono {
+  id        String   @id @default(cuid())
+  clienteId String
+  cliente   Cliente  @relation(fields: [clienteId], references: [id])
+  valor     Decimal  @db.Decimal(12, 2)
+  fecha     DateTime @default(now())
+}
