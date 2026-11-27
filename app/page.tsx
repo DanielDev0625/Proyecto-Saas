@@ -1,103 +1,79 @@
+
 import Image from "next/image";
+import Link from "next/link";
+
+const funciones = [
+  {
+    titulo: "Inventario al día",
+    texto: "Controla existencias y precios de cada producto.",
+  },
+  {
+    titulo: "Ventas rápidas",
+    texto: "Registra cada venta desde el celular o el computador.",
+  },
+  {
+    titulo: "Fiados en orden",
+    texto: "Lleva la cuenta de cada cliente y registra sus abonos.",
+  },
+  {
+    titulo: "Alertas de reposición",
+    texto: "Recibe avisos cuando un producto está por agotarse.",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
+          src="/logo.svg"
+          alt="MartGo"
+          width={150}
+          height={43}
           priority
         />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <Link
+          href="/login"
+          className="rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800"
+        >
+          Iniciar sesión
+        </Link>
+      </header>
+
+      <section className="mx-auto max-w-6xl px-6 py-20 text-center">
+        <h1 className="text-4xl font-bold sm:text-5xl">
+          La tienda de barrio, organizada.
+        </h1>
+
+        <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
+          MartGo reúne el inventario, las ventas y los fiados de tu negocio
+          en una sola aplicación web.
+        </p>
+
+        <Link
+          href="/login"
+          className="mt-10 inline-block rounded-md bg-blue-700 px-6 py-3 font-medium text-white hover:bg-blue-800"
+        >
+          Entrar al panel
+        </Link>
+      </section>
+
+      <section className="mx-auto grid max-w-6xl gap-6 px-6 pb-20 sm:grid-cols-2 lg:grid-cols-4">
+        {funciones.map((f) => (
+          <article
+            key={f.titulo}
+            className="rounded-lg border border-slate-200 bg-white p-6"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+            <h2 className="font-semibold">{f.titulo}</h2>
+            <p className="mt-2 text-sm text-slate-600">{f.texto}</p>
+          </article>
+        ))}
+      </section>
+
+      <footer className="border-t border-slate-200 py-6 text-center text-sm text-slate-500">
+        MartGo · Buenas Prácticas de Desarrollo de Software · Universidad de la Costa
       </footer>
-    </div>
+    </main>
   );
 }
