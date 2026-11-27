@@ -1,13 +1,9 @@
-
 "use server";
 
 import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
 
-export async function iniciarSesion(
-  _estado: string | undefined,
-  formData: FormData
-) {
+export async function iniciarSesion(_estado: string | undefined, formData: FormData) {
   try {
     await signIn("credentials", {
       email: formData.get("email"),
@@ -15,10 +11,7 @@ export async function iniciarSesion(
       redirectTo: "/dashboard",
     });
   } catch (error) {
-    if (error instanceof AuthError) {
-      return "Correo o contraseña incorrectos.";
-    }
-
+    if (error instanceof AuthError) return "Correo o contraseña incorrectos.";
     throw error;
   }
 }

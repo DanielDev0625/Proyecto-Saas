@@ -1,57 +1,46 @@
+"use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { signOut } from "@/auth";
+import { usePathname } from "next/navigation";
 
-const enlaces = [
+const links = [
   { href: "/dashboard", texto: "Resumen" },
   { href: "/dashboard/inventario", texto: "Inventario" },
   { href: "/dashboard/ventas", texto: "Ventas" },
   { href: "/dashboard/fiados", texto: "Fiados" },
 ];
 
-export default function Sidebar({
-  nombre,
-  rol,
-}: {
+type SidebarProps = {
   nombre: string;
   rol: string;
-}) {
-  async function cerrarSesion() {
-    "use server";
-    await signOut({ redirectTo: "/" });
-  }
+};
+
+export default function Sidebar({ nombre, rol }: SidebarProps) {
+  const pathname = usePathname();
 
   return (
-    <aside className="flex w-full flex-col bg-slate-900 p-6 text-slate-100 md:min-h-screen md:w-60">
-      <Image
-        src="/logo-white.svg"
-        alt="MartGo"
-        width={140}
-        height={40}
-      />
+    <aside className="w-64 min-h-screen bg-gray-900 text-white flex flex-col">
+      <div className="p-6 border-b border-gray-700">
+        <p className="text-lg font-semibold">{nombre}</p>
+        <p className="text-sm text-gray-400 capitalize">{rol}</p>
+      </div>
 
-      <p className="mt-3 text-xs text-slate-400">
-        {nombre} · {rol === "ADMIN" ? "Administrador" : "Vendedor"}
-      </p>
-
-      <nav className="mt-8 flex flex-col gap-1">
-        {enlaces.map((e) => (
-          <Link
-            key={e.href}
-            href={e.href}
-            className="rounded px-3 py-2 text-sm hover:bg-slate-800"
-          >
-            {e.texto}
-          </Link>
-        ))}
+      <nav className="flex-1 p-4 flex flex-col gap-1">
+        {links.map((link) => {
+          const activo = pathname === link.href;
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activo ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-800"
+              }`}
+            >
+              {link.texto}
+            </Link>
+          );
+        })}
       </nav>
-
-      <form action={cerrarSesion} className="mt-auto pt-8">
-        <button className="w-full rounded border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800">
-          Cerrar sesión
-        </button>
-      </form>
     </aside>
   );
-}
+} 
