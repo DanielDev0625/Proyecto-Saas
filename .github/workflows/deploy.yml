@@ -1,0 +1,58 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Solo un despliegue a la vez: si llega otro push mientras uno corre, espera su turno.
+concurrency:
+  group: deploy-produccion
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Valores de ejemplo solo para compilar: no apuntan a ninguna base de datos real.
+    env:
+      DATABASE_URL: postgresql://usuario:clave@localhost:5432/martgo_ejemplo
+      AUTH_SECRET: secreto-de-ejemplo-solo-para-el-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar en EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/martgo && git fetch origin && git checkout main && git pull origin main && npm ci && npx prisma generate && npx prisma migrate deploy && npm run build && pm2 reload martgo
+
+      - name: Verificar que la página responde
+        run: |
+          for intento in 1 2 3 4 5 6; do
+            if curl --fail --silent --show-error --max-time 10 "https://${{ secrets.APP_DOMAIN }}/api/health"; then
+              echo ""
+              echo "MartGo responde correctamente."
+              exit 0
+            fi
+            echo "Intento $intento sin respuesta, se reintenta en 10 segundos..."
+            sleep 10
+          done
+          echo "MartGo no respondió después de 6 intentos."
+          exit 1
