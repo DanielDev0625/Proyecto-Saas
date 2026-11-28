@@ -1,5 +1,9 @@
 # MartGo
 
+**Aplicación en producción:** [https://martgo.tech](https://martgo.tech)
+
+**Usuario de prueba:** `admin@martgo.test` / `MartGo2026*`
+
 MartGo es una aplicación web (SaaS) para tiendas de barrio. Ayuda a llevar el **inventario**, las **ventas** y los **fiados** (ventas a crédito) desde el computador o el celular.
 
 Es un proyecto académico de la Universidad de la Costa.
@@ -15,8 +19,6 @@ Es un proyecto académico de la Universidad de la Costa.
 - **Ventas**: registro de ventas de contado o fiadas. El stock se descuenta automáticamente.
 - **Fiados**: lista de clientes con deuda y registro de abonos. Cada abono paga primero la deuda más antigua.
 
-Ip publica https://martgo.tech/
-
 ## Tecnologías
 
 | Parte          | Herramienta                                       |
@@ -28,6 +30,32 @@ Ip publica https://martgo.tech/
 | Gráficas       | Recharts                                          |
 | Pruebas        | Vitest                                            |
 | CI/CD          | GitHub Actions                                    |
+
+## Screenshots
+
+### Landing
+
+![Landing](docs/landing.png)
+
+### Inicio de sesión
+
+![Login](docs/login.png)
+
+### Dashboard
+
+![Dashboard](docs/dashboard.png)
+
+### Inventario
+
+![Inventario](docs/inventario.png)
+
+### Ventas
+
+![Ventas](docs/ventas.png)
+
+### Fiados
+
+![Fiados](docs/fiados.png)
 
 ## Cómo correrlo en local
 
@@ -99,6 +127,12 @@ deploy/               Configuración de Nginx
 - Al abrir un pull request hacia `develop` o `main`, el workflow **CI** corre lint, tests y build.
 - `main` es la versión en producción: cada merge a `main` se despliega solo.
 
+## Arquitectura en AWS
+
+![Arquitectura en AWS](docs/screenshots/arquitectura.png)
+
+El dominio `martgo.tech` apunta mediante DNS a una **Elastic IP** asociada a una instancia **EC2**. En EC2, Nginx recibe las solicitudes HTTPS administradas por **Certbot** y reenvía el tráfico a Next.js ejecutada con **PM2**. La base de datos **RDS PostgreSQL** está ubicada en una subred privada y solo el servidor EC2 puede acceder a ella. El almacenamiento privado de archivos y evidencias se administra en **S3 privado**.
+
 ## Deployment
 
 MartGo corre en un servidor **EC2** de AWS Academy:
@@ -107,6 +141,16 @@ MartGo corre en un servidor **EC2** de AWS Academy:
 - **PM2** mantiene la app encendida y la reinicia si se cae. Ver `ecosystem.config.js`.
 - **Certbot** genera y renueva el certificado HTTPS (Let's Encrypt).
 - **RDS** (PostgreSQL) guarda los datos. El servidor la usa con la variable `DATABASE_URL`, que está en el archivo `.env` del servidor (nunca en el repositorio).
+
+### Flujo CI/CD
+
+![Flujo CI/CD](docs/screenshots/flujo-ci-cd.png)
+
+![GitHub Actions Deploy](docs/screenshots/github-actions-deploy.png)
+
+El workflow `.github/workflows/ci.yml` se ejecuta en pull requests hacia `develop` o `main` y contiene los jobs secuenciales **lint**, **test** y **build**. Después de instalar las dependencias, lint revisa el código, test ejecuta las pruebas de Vitest y build genera Prisma y compila la aplicación.
+
+El workflow `.github/workflows/deploy.yml` se ejecuta al publicar cambios en `main` o manualmente desde GitHub Actions. Contiene el job **build**, que instala, lint, prueba y compila; y el job **deploy**, que se conecta por SSH al EC2, actualiza el código, ejecuta migraciones, recompila y recarga PM2. Finalmente, verifica `/api/health` en `https://martgo.tech`.
 
 **Deploy automático:** cada merge a `main` ejecuta `.github/workflows/deploy.yml`, que también se puede lanzar a mano desde la pestaña *Actions*. El workflow hace tres cosas:
 
@@ -122,3 +166,43 @@ MartGo corre en un servidor **EC2** de AWS Academy:
 | `EC2_USER`    | Usuario SSH del servidor (por ejemplo, `ubuntu`)         |
 | `EC2_SSH_KEY` | Llave privada SSH (contenido completo del archivo `.pem`) |
 | `APP_DOMAIN`  | Dominio de la app, sin `https://`                        |
+
+## Evidencias del despliegue
+
+### RDS y subredes
+
+![RDS y subredes](docs/screenshots/aws-rds-subredes.png)
+
+### Elastic IP
+
+![Elastic IP](docs/screenshots/aws-elastic-ip.png)
+
+### PM2 y health check
+
+![PM2 y health check](docs/screenshots/servidor-pm2-health.png)
+
+### Dominio HTTPS
+
+![Dominio HTTPS](docs/screenshots/dominio-https.png)
+
+## Recursos
+
+- [Documentación de Next.js](https://nextjs.org/docs)
+- [Documentación de Prisma](https://www.prisma.io/docs)
+- [Documentación de Auth.js](https://authjs.dev)
+- [Documentación de Tailwind CSS](https://tailwindcss.com/docs)
+- [Documentación de Vitest](https://vitest.dev)
+- [Documentación de AWS EC2](https://docs.aws.amazon.com/ec2/)
+- [Documentación de AWS RDS](https://docs.aws.amazon.com/rds/)
+- [Documentación de Nginx](https://nginx.org/en/docs/)
+- [Documentación de PM2](https://pm2.keymetrics.io/docs/usage/quick-start/)
+- [Documentación de Let's Encrypt](https://letsencrypt.org/docs/)
+
+## Equipo
+
+- **Daniel de Jesús Sánchez Sierra** — [DanielDev0625](https://github.com/DanielDev0625)
+- **José Alejandro Muñoz Coronado** — [munoz08](https://github.com/munoz08)
+
+Universidad de la Costa  
+Buenas Prácticas de Desarrollo de Software  
+Docente: Kelly Villa Collazos
