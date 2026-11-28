@@ -12,7 +12,12 @@ export type ProductoInventario = {
   precioVenta: number;
   stock: number;
   stockMinimo: number;
+  promedio: number; // unidades vendidas por día (últimos 7 días)
+  reponer: boolean; // calculado en el servidor con necesitaReposicion (lib/stock.ts)
 };
+
+// 4 → "4"; 1.5714 → "1,6"
+const unidadesDia = (n: number) => n.toLocaleString("es-CO", { maximumFractionDigits: 1 });
 
 const iconoMas = "M12 5v14M5 12h14";
 const iconoBuscar = "m21 21-4.3-4.3M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z";
@@ -39,7 +44,7 @@ export default function VistaInventario({
     );
   }, [productos, busqueda]);
 
-  const porReponer = productos.filter((p) => p.stock <= p.stockMinimo).length;
+  const porReponer = productos.filter((p) => p.reponer).length;
 
   const botonNuevo = esAdmin && (
     <button
@@ -136,12 +141,23 @@ export default function VistaInventario({
                   <th scope="col" className={estilos.thDerecha}>Precio de venta</th>
                   <th scope="col" className={estilos.thDerecha}>Stock</th>
                   <th scope="col" className={estilos.thDerecha}>Mínimo</th>
+                  <th scope="col" className={estilos.thDerecha} title="Promedio de unidades vendidas por día en los últimos 7 días">
+                    Venta/día
+                  </th>
                   <th scope="col" className={estilos.th}>Estado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtrados.map((p) => {
-                  const reponer = p.stock <= p.stockMinimo;
+                  const reponer = p.reponer;
+                  // Días que alcanza el stock al ritmo actual (solo si se está vendiendo).
+                  const diasRestantes = p.promedio > 0 ? Math.floor(p.stock / p.promedio) : null;
+                  const motivo =
+                    p.stock <= p.stockMinimo
+                      ? "En o bajo el mínimo"
+                      : diasRestantes !== null
+                        ? `Alcanza para ${diasRestantes === 1 ? "1 día" : `${diasRestantes} días`} al ritmo actual`
+                        : undefined;
                   return (
                     <tr key={p.id} className="transition-colors hover:bg-slate-50">
                       <td className={`${estilos.td} font-medium text-slate-900`}>{p.nombre}</td>
@@ -153,9 +169,15 @@ export default function VistaInventario({
                         {p.stock}
                       </td>
                       <td className={`${estilos.tdDerecha} text-slate-500`}>{p.stockMinimo}</td>
+                      <td className={`${estilos.tdDerecha} text-slate-500`}>
+                        {p.promedio > 0 ? unidadesDia(p.promedio) : "—"}
+                      </td>
                       <td className={estilos.td}>
                         {reponer ? (
-                          <Insignia tono="rojo">Reponer</Insignia>
+                          <span className="flex flex-col items-start gap-0.5">
+                            <Insignia tono="rojo">Reponer</Insignia>
+                            {motivo && <span className="text-xs text-slate-500">{motivo}</span>}
+                          </span>
                         ) : (
                           <Insignia tono="verde">Suficiente</Insignia>
                         )}

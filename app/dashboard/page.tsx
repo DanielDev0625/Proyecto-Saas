@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Icono, iconos } from "@/components/Iconos";
 import { obtenerDatosGraficas } from "@/lib/graficas";
+import { marcarReposicion, obtenerPromediosDiarios } from "@/lib/reposicion";
 import GraficaBarrasProductos from "@/components/charts/GraficaBarrasProductos";
 import GraficaVentasSemana from "@/components/charts/GraficaVentasSemana";
 import GraficaContadoFiado from "@/components/charts/GraficaContadoFiado";
@@ -32,13 +33,10 @@ export default async function ResumenPage() {
   if (!session?.user?.tiendaId) redirect("/login");
   const tiendaId = session.user.tiendaId;
 
-  // "Por reponer" compara dos columnas: stock <= stockMinimo (referencia de campo de Prisma).
-  const filtroReponer = { tiendaId, stock: { lte: prisma.producto.fields.stockMinimo } };
-
   // Las consultas de las gráficas empiezan ya, en paralelo con las del resumen.
   const promesaGraficas = obtenerDatosGraficas(tiendaId);
 
-  const [productos, ventasHoy, fiados, clientesConDeuda, porReponer, totalPorReponer, ultimasVentas] =
+  const [productos, ventasHoy, fiados, clientesConDeuda, inventario, promedios, ultimasVentas] =
     await Promise.all([
       prisma.producto.count({ where: { tiendaId } }),
       prisma.venta.aggregate({
@@ -54,13 +52,13 @@ export default async function ResumenPage() {
         by: ["clienteId"],
         where: { tiendaId, fiado: true, saldoPendiente: { gt: 0 }, clienteId: { not: null } },
       }),
+      // "Por reponer" usa la misma regla que Inventario (necesitaReposicion): en o bajo el mínimo,
+      // o sin stock para 3 días al ritmo de venta. Por eso se calcula aquí y no con un filtro de la base.
       prisma.producto.findMany({
-        where: filtroReponer,
-        orderBy: [{ stock: "asc" }, { nombre: "asc" }],
-        take: 6,
+        where: { tiendaId },
         select: { id: true, nombre: true, stock: true, stockMinimo: true },
       }),
-      prisma.producto.count({ where: filtroReponer }),
+      obtenerPromediosDiarios(tiendaId),
       prisma.venta.findMany({
         where: { tiendaId },
         orderBy: { fecha: "desc" },
@@ -71,6 +69,12 @@ export default async function ResumenPage() {
         },
       }),
     ]);
+
+  const paraReponer = marcarReposicion(inventario, promedios)
+    .filter((p) => p.reponer)
+    .sort((a, b) => a.stock - b.stock || a.nombre.localeCompare(b.nombre, "es"));
+  const totalPorReponer = paraReponer.length;
+  const porReponer = paraReponer.slice(0, 6);
 
   const graficas = await promesaGraficas;
   const primerNombre = (session.user.name ?? "").split(" ")[0] || "de nuevo";
@@ -101,7 +105,7 @@ export default async function ResumenPage() {
     {
       titulo: "Productos por reponer",
       valor: String(totalPorReponer),
-      detalle: totalPorReponer === 0 ? "Todo en orden" : "En o bajo el mínimo",
+      detalle: totalPorReponer === 0 ? "Todo en orden" : "Bajo el mínimo o por agotarse",
       icono: iconos.alerta,
       color: totalPorReponer === 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700",
     },
@@ -229,7 +233,7 @@ export default async function ResumenPage() {
               icono={iconos.check}
               tono="verde"
               titulo="Todo el inventario está en orden"
-              texto="Ningún producto está en o por debajo de su stock mínimo."
+              texto="Ningún producto está en su mínimo ni se va a agotar en los próximos 3 días."
             />
           ) : (
             <>
@@ -238,7 +242,11 @@ export default async function ResumenPage() {
                   <li key={p.id} className="flex items-center justify-between gap-4 px-5 py-3.5">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-slate-900">{p.nombre}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">Mínimo: {p.stockMinimo}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Mínimo: {p.stockMinimo}
+                        {p.promedio > 0 &&
+                          ` · vende ${p.promedio.toLocaleString("es-CO", { maximumFractionDigits: 1 })}/día`}
+                      </p>
                     </div>
                     <span className="whitespace-nowrap rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">
                       {p.stock === 0 ? "Agotado" : `Quedan ${p.stock}`}
