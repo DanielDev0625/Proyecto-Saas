@@ -1,13 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { Icono, iconos } from "@/components/Iconos";
+import { EncabezadoPagina, EstadoVacio, Insignia, estilos, pesos } from "@/components/ui";
 import FormularioVenta from "./FormularioVenta";
-
-const pesos = new Intl.NumberFormat("es-CO", {
-  style: "currency",
-  currency: "COP",
-  maximumFractionDigits: 0,
-});
 
 // Hora de Colombia, aunque el servidor (AWS) esté en UTC.
 const fechaHora = new Intl.DateTimeFormat("es-CO", {
@@ -43,55 +39,76 @@ export default async function VentasPage() {
   const vendibles = productos.map((p) => ({ ...p, precioVenta: Number(p.precioVenta) }));
 
   return (
-    <div className="min-h-screen bg-white p-6 text-slate-900">
-      <h1 className="mb-6 text-2xl font-semibold">Ventas</h1>
+    <div className="space-y-6">
+      <EncabezadoPagina
+        titulo="Ventas"
+        descripcion="Registra ventas de contado o fiadas y revisa las más recientes."
+        accion={
+          <a href="#nueva-venta" className={estilos.btnPrimario}>
+            <Icono d="M12 5v14M5 12h14" className="h-4 w-4" />
+            Nueva venta
+          </a>
+        }
+      />
 
-      <section className="mb-8">
-        <h2 className="mb-3 text-lg font-medium">Nueva venta</h2>
-        <FormularioVenta productos={vendibles} />
-      </section>
+      {/* grid-cols-1 = minmax(0,1fr): sin esto, en celular la tabla ensancha la columna */}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+        <section id="nueva-venta" className={`${estilos.tarjeta} scroll-mt-24 p-5 sm:p-6`}>
+          <h2 className="font-semibold text-slate-900">Nueva venta</h2>
+          <p className="mt-1 text-sm text-slate-500">El stock se descuenta automáticamente.</p>
+          <div className="mt-5">
+            <FormularioVenta productos={vendibles} />
+          </div>
+        </section>
 
-      <section>
-        <h2 className="mb-3 text-lg font-medium">Últimas ventas</h2>
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium text-slate-600">Fecha</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-600">Productos</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-600">Tipo</th>
-                <th className="px-4 py-3 text-right font-medium text-slate-600">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {ventas.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
-                    Aún no hay ventas registradas.
-                  </td>
-                </tr>
-              ) : (
-                ventas.map((v) => (
-                  <tr key={v.id} className="hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600 tabular-nums">
-                      {fechaHora.format(v.fecha)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {v.detalles.map((d) => `${d.cantidad} x ${d.producto.nombre}`).join(", ")}
-                    </td>
-                    <td className="px-4 py-3">
-                      {v.fiado ? `Fiado: ${v.cliente?.nombre ?? "—"}` : "Contado"}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium tabular-nums">
-                      {pesos.format(Number(v.total))}
-                    </td>
+        <section className={`${estilos.tarjeta} lg:col-span-2`}>
+          <div className="border-b border-slate-200 px-5 py-4">
+            <h2 className="font-semibold text-slate-900">Últimas ventas</h2>
+            <p className="mt-0.5 text-sm text-slate-500">Las 10 más recientes de tu tienda.</p>
+          </div>
+
+          {ventas.length === 0 ? (
+            <EstadoVacio
+              icono={iconos.ventas}
+              titulo="Aún no hay ventas"
+              texto="Registra la primera con el formulario y aparecerá aquí."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th scope="col" className={estilos.th}>Fecha</th>
+                    <th scope="col" className={estilos.th}>Productos</th>
+                    <th scope="col" className={estilos.th}>Tipo</th>
+                    <th scope="col" className={estilos.thDerecha}>Total</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {ventas.map((v) => (
+                    <tr key={v.id} className="transition-colors hover:bg-slate-50">
+                      <td className={`${estilos.td} tabular-nums text-slate-500`}>{fechaHora.format(v.fecha)}</td>
+                      <td className={`${estilos.td} text-slate-900`}>
+                        {v.detalles.map((d) => `${d.cantidad} x ${d.producto.nombre}`).join(", ")}
+                      </td>
+                      <td className={estilos.td}>
+                        {v.fiado ? (
+                          <Insignia tono="ambar">Fiado · {v.cliente?.nombre ?? "—"}</Insignia>
+                        ) : (
+                          <Insignia tono="gris">Contado</Insignia>
+                        )}
+                      </td>
+                      <td className={`${estilos.tdDerecha} font-semibold text-slate-900`}>
+                        {pesos.format(Number(v.total))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
