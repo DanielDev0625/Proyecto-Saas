@@ -15,6 +15,8 @@ Es un proyecto académico de la Universidad de la Costa.
 - **Ventas**: registro de ventas de contado o fiadas. El stock se descuenta automáticamente.
 - **Fiados**: lista de clientes con deuda y registro de abonos. Cada abono paga primero la deuda más antigua.
 
+Ip publica https://martgo.tech/
+
 ## Tecnologías
 
 | Parte          | Herramienta                                       |
