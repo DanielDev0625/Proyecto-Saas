@@ -3,6 +3,10 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Icono, iconos } from "@/components/Iconos";
+import { obtenerDatosGraficas } from "@/lib/graficas";
+import GraficaBarrasProductos from "@/components/charts/GraficaBarrasProductos";
+import GraficaVentasSemana from "@/components/charts/GraficaVentasSemana";
+import GraficaContadoFiado from "@/components/charts/GraficaContadoFiado";
 
 const pesos = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -30,6 +34,9 @@ export default async function ResumenPage() {
 
   // "Por reponer" compara dos columnas: stock <= stockMinimo (referencia de campo de Prisma).
   const filtroReponer = { tiendaId, stock: { lte: prisma.producto.fields.stockMinimo } };
+
+  // Las consultas de las gráficas empiezan ya, en paralelo con las del resumen.
+  const promesaGraficas = obtenerDatosGraficas(tiendaId);
 
   const [productos, ventasHoy, fiados, clientesConDeuda, porReponer, totalPorReponer, ultimasVentas] =
     await Promise.all([
@@ -65,6 +72,7 @@ export default async function ResumenPage() {
       }),
     ]);
 
+  const graficas = await promesaGraficas;
   const primerNombre = (session.user.name ?? "").split(" ")[0] || "de nuevo";
 
   const tarjetas = [
@@ -123,6 +131,36 @@ export default async function ResumenPage() {
           </article>
         ))}
       </div>
+
+      {/* Gráficas */}
+      {graficas.hayVentas ? (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <TarjetaGrafica titulo="Ventas de los últimos 7 días" subtitulo="Total vendido por día, en pesos.">
+            <GraficaVentasSemana datos={graficas.ultimos7Dias} />
+            {graficas.ultimos7Dias.every((d) => d.total === 0) && (
+              <p className="mt-2 text-center text-sm text-slate-500">No hubo ventas en estos 7 días.</p>
+            )}
+          </TarjetaGrafica>
+          <TarjetaGrafica titulo="Contado vs fiado" subtitulo="Cuánto se ha vendido de cada forma.">
+            <GraficaContadoFiado datos={graficas.contadoVsFiado} />
+          </TarjetaGrafica>
+          <TarjetaGrafica titulo="Productos más vendidos" subtitulo="Top 5 por unidades vendidas.">
+            <GraficaBarrasProductos datos={graficas.masVendidos} medida="unidades" />
+          </TarjetaGrafica>
+          <TarjetaGrafica titulo="Ingresos por producto" subtitulo="Top 5 por dinero recibido (cantidad × precio).">
+            <GraficaBarrasProductos datos={graficas.ingresosPorProducto} medida="pesos" />
+          </TarjetaGrafica>
+        </div>
+      ) : (
+        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <EstadoVacio
+            icono="M4 20V10M10 20V4M16 20v-7M22 20H2"
+            titulo="Aquí verás las gráficas de tu tienda"
+            texto="Cuando registres tus primeras ventas aparecerán los productos más vendidos, las ventas de la semana y más."
+            enlace={{ href: "/dashboard/ventas", texto: "Registrar una venta" }}
+          />
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Últimas ventas */}
@@ -254,5 +292,23 @@ function EstadoVacio({
         </Link>
       )}
     </div>
+  );
+}
+
+function TarjetaGrafica({
+  titulo,
+  subtitulo,
+  children,
+}: {
+  titulo: string;
+  subtitulo: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="font-semibold text-slate-900">{titulo}</h2>
+      <p className="mt-0.5 text-sm text-slate-500">{subtitulo}</p>
+      <div className="mt-5">{children}</div>
+    </section>
   );
 }
