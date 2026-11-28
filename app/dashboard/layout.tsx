@@ -1,6 +1,19 @@
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import Sidebar from "@/components/Sidebar";
+import EncabezadoDashboard from "@/components/EncabezadoDashboard";
+
+// "viernes, 27 de noviembre de 2026" → "Viernes, 27 de noviembre de 2026" (hora de Colombia)
+function fechaDeHoy() {
+  const texto = new Intl.DateTimeFormat("es-CO", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "America/Bogota",
+  }).format(new Date());
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
 
 export default async function DashboardLayout({
   children,
@@ -18,13 +31,16 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="min-h-screen bg-slate-50 lg:flex">
       <Sidebar
         nombre={session.user.name ?? "Usuario"}
         rol={session.user.rol}
         cerrarSesion={cerrarSesion}
       />
-      <main className="flex-1 p-6 bg-gray-50">{children}</main>
+      <div className="min-w-0 flex-1">
+        <EncabezadoDashboard fecha={fechaDeHoy()} />
+        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
+      </div>
     </div>
   );
 }
