@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Icono, iconos } from "@/components/Iconos";
 import { EncabezadoPagina, EstadoVacio, Insignia, estilos, pesos } from "@/components/ui";
+import { necesitaReposicion } from "@/lib/stock";
 import FormularioProducto from "./FormularioProducto";
 
 export type ProductoInventario = {
@@ -152,8 +153,9 @@ export default function VistaInventario({
                   const reponer = p.reponer;
                   // Días que alcanza el stock al ritmo actual (solo si se está vendiendo).
                   const diasRestantes = p.promedio > 0 ? Math.floor(p.stock / p.promedio) : null;
+                  // Sin promedio, necesitaReposicion solo revisa el mínimo: así se sabe cuál regla se cumplió.
                   const motivo =
-                    p.stock <= p.stockMinimo
+                    necesitaReposicion(p.stock, p.stockMinimo)
                       ? "En o bajo el mínimo"
                       : diasRestantes !== null
                         ? `Alcanza para ${diasRestantes === 1 ? "1 día" : `${diasRestantes} días`} al ritmo actual`
